@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tenna - 連続技アニメーション</title>
+    <style>
+        /* 基本設定 */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* ゲーム画面（上部） */
+        .game-screen {
+            width: 95%;
+            max-width: 800px;
+            height: 60vh;
+            background-color: #000;
+            position: relative;
+            border: 5px solid #444;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            margin-top: 10px;
+            overflow: hidden;
+            display: flex; /* キャラクターを中央に配置するために追加 */
+            justify-content: center;
+            align-items: flex-end; /* キャラクターを画面下部に配置 */
+        }
+
+        /* キャラクター画像コンテナ */
+        .character-container {
+            position: relative;
+            width: 250px; /* キャラクターの表示サイズ */
+            height: 250px; /* キャラクターの表示サイズ */
+            bottom: 0;
+            filter: drop-shadow(0 0 15px rgba(255, 255, 0, 0.7)); /* 技の光のイメージ */
+        }
+
+        /* キャラクター画像の設定 */
+        .character-frame {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0; /* 最初は非表示 */
+            transition: opacity 0.1s; /* フェード切り替え */
+            object-fit: contain; /* 画像をコンテナに収める */
+            object-position: bottom center; /* 画像を下に配置 */
+        }
+
+        /* UI要素（ライフバーなど） */
+        .ui-top {
+            position: absolute;
+            top: 10px;
+            width: 96%;
+            height: 30px;
+            background: linear-gradient(to right, #27ae60, #2ecc71);
+            border: 2px solid #fff;
+            margin: 0 2%;
+            line-height: 30px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* コントローラーUI（下部） */
+        .controller-ui {
+            width: 100%;
+            padding: 10px 0;
+            background-color: #222;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 30vh;
+        }
+
+        /* 方向キー（左側） */
+        .dpad {
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left center right"
+                ". down .";
+            width: 180px;
+            height: 180px;
+        }
+
+        /* アクションボタン（右側） */
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* ボタン共通スタイル */
+        .control-button {
+            background-color: #c0392b;
+            color: white;
+            border: 3px solid #e74c3c;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            box-shadow: 0 4px #a83226;
+            transition: all 0.05s;
+        }
+
+        .dpad-button {
+            background-color: #34495e;
+            border: 3px solid #2c3e50;
+            border-radius: 5px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            box-shadow: 0 3px #2c3e50;
+            margin: 2px;
+        }
+        
+        .control-button:active, .dpad-button:active {
+            box-shadow: none;
+            transform: translateY(3px);
+        }
+
+        #dpad-up    { grid-area: up; }
+        #dpad-left  { grid-area: left; }
+        #dpad-right { grid-area: right; }
+        #dpad-down  { grid-area: down; }
+
+        /* アニメーション用のCSS */
+        @keyframes customMove {
+            0%   { opacity: 1; transform: scale(1); } /* 1枚目の画像 */
+            20%  { opacity: 0; transform: scale(1); } /* 1枚目消える */
+            20.1% { opacity: 0; transform: scale(1.05); } /* 2枚目準備 */
+            25%  { opacity: 1; transform: scale(1); } /* 2枚目表示 */
+            40%  { opacity: 0; transform: scale(1); }
+            40.1% { opacity: 0; transform: scale(1.05); } /* 3枚目準備 */
+            45%  { opacity: 1; transform: scale(1); }
+            60%  { opacity: 0; transform: scale(1); }
+            60.1% { opacity: 0; transform: scale(1.05); } /* 4枚目準備 */
+            65%  { opacity: 1; transform: scale(1); }
+            80%  { opacity: 0; transform: scale(1); }
+            80.1% { opacity: 0; transform: scale(1.05); } /* 5枚目準備 */
+            85%  { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1); } /* 5枚目消える */
+        }
+
+        /* 各画像にアニメーションを適用 */
+        .frame-1 { animation: customMove 5s infinite; animation-delay: 0s; }
+        .frame-2 { animation: customMove 5s infinite; animation-delay: -1s; } /* 20%から表示開始 */
+        .frame-3 { animation: customMove 5s infinite; animation-delay: -2s; } /* 40%から表示開始 */
+        .frame-4 { animation: customMove 5s infinite; animation-delay: -3s; } /* 60%から表示開始 */
+        .frame-5 { animation: customMove 5s infinite; animation-delay: -4s; } /* 80%から表示開始 */
+
+
+    </style>
+</head>
+<body>
+
+    <div class="game-screen">
+        <div class="ui-top">TENNA | P1 | 100% LIFE</div>
+
+        <div class="character-container">
+            <img src="1762650404465.gif" alt="Tenna Frame 1" class="character-frame frame-1">
+            <img src="1763301225587.gif" alt="Tenna Frame 2" class="character-frame frame-2">
+            <img src="1763301386705.gif" alt="Tenna Frame 3" class="character-frame frame-3">
+            <img src="1763301416489.gif" alt="Tenna Frame 4" class="character-frame frame-4">
+            <img src="1763301435777.gif" alt="Tenna Frame 5" class="character-frame frame-5">
+        </div>
+    </div>
+
+    <div class="controller-ui">
+        
+        <div class="dpad">
+            <div id="dpad-up" class="dpad-button">↑ JUMP</div>
+            <div id="dpad-left" class="dpad-button">← MOVE</div>
+            <div id="dpad-right" class="dpad-button">MOVE →</div>
+            <div id="dpad-down" class="dpad-button">↓ DOWN</div>
+        </div>
+
+        <div class="action-buttons">
+            <div class="control-button">PUNCH</div>
+            <div class="control-button">KICK</div>
+            <div class="control-button">SPECIAL</div> </div>
+
+    </div>
+
+</body>
+</html>
